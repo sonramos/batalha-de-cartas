@@ -1,32 +1,30 @@
+from PilhaEncadeada import PilhaException
 from Player import Player
 from Baralho import Baralho
 
 class Game:
-    INTERVALO = 20
+    INTERVALO = 5
     def __init__(self):
-        self.__round = 1
+        self.__round = 0
         self.player1 = Player()
         self.player2 = Player()
         self.baralho = Baralho()
         self.__cartasDaVez = []
-        self.__empate = 0
-    
-    @property
-    def empate(self):
-        return self.__empate
-
-    @empate.setter
-    def empate(self, value):
-        self.__empate = value
     
     def round(self):
         self.__round += 1
         self.battle()
 
     def battle(self):
-        carta1 = self.player1.mao.desempilha()
-        carta2 = self.player2.mao.desempilha()
-        print(f'\nCarta do Jogador 1: {carta1}\n\nCarta do Jogador 2: {carta2}\n')
+        try:
+            carta1 = self.player1.desempilhaCarta()
+        except:
+            raise PilhaException(f"{self.player1} nao possui mais cartas na mao.",self.game_winner(self.player2))
+        try:
+            carta2 = self.player2.desempilhaCarta()
+        except:
+            raise PilhaException(f"{self.player2} nao possui mais cartas na mao.",self.game_winner(self.player1))
+        print(f'\n***** Carta - Jogador 1: {carta1} *****\n\n***** Carta - Jogador 2: {carta2} *****\n\n')
         self.__cartasDaVez.append(carta1)
         self.__cartasDaVez.append(carta2)
 
@@ -35,54 +33,73 @@ class Game:
             for carta in self.__cartasDaVez:
                 saida += carta.__str__() + ' '
             print(f'\n***Empate!!***\n*** Cartas retidas: {saida}***')
-            self.empate += 1
             print("\nIniciando rodada de desempate...\n")
             self.battle()
         elif carta1.numero < carta2.numero:
+            print(f"{self.player2} venceu a rodada!")
+            self.player2.win += 1
             self.coletaCartas(self.player2, self.__cartasDaVez)
-            self.winner(self.player2)
+            self.close_round()            
         else:
+            print(f"{self.player1} venceu a rodada!")
+            self.player1.win += 1
             self.coletaCartas(self.player1, self.__cartasDaVez)
-            self.winner(self.player1)
-
+            self.close_round()
 
     def coletaCartas(self, player, lista):
         saida = ''
         for carta in lista:
             saida += carta.__str__() + ' '
-        print(f"Cartas adquiridas: {saida}")
-        for i in range(len(lista)):
-            player.mao.insereFundo(lista.pop())
+        print(f"\n***** Cartas adquiridas: {saida} *****")
+        #for i in range(len(lista)):
+        while lista:
+            player.recebeCartaFundo(lista.pop())
     
     def divideBaralho(self):
         i = 0
         while self.baralho.temCarta():
             if i%2 == 0:
-                self.player1.mao.empilha(self.baralho.retirarCarta())
+                self.player1.empilhaCarta(self.baralho.retirarCarta())
             else:
-                self.player2.mao.empilha(self.baralho.retirarCarta())
+                self.player2.empilhaCarta(self.baralho.retirarCarta())
             i += 1
     
-    def winner(self, player):
-        self.empate = 0
-        player.win += 1
+    def close_round(self):
         print(f"""
-                Jogador {player.id}: {player.name} venceu a rodada!
-                Vitórias: {player.win}
-                Total de Cartas:  {player.mao.tamanho()}\n   
-                """)
+        ###############################################
+        #                                             #
+                    Vitórias {self.player1}: {self.player1.win} 
+                    Cartas na mão:  {self.player1.totalCartas()}          
+        #                                             #
+        ###############################################
+
+        ###############################################
+        #                                             #
+                    Vitórias {self.player2}: {self.player2.win} 
+                    Cartas na mão:  {self.player2.totalCartas()}
+        #                                             #
+        ###############################################
+        """)
+
+    def game_winner(self, player):
+        print(f"""
+        {player} venceu o jogo!
+        Total de Vitórias: {player.win}
+        Total de Cartas:  {player.totalCartas()}\n   
+        """)
+        exit()
 
     def mostraResultado(self):
         print(f"""
         #########################################
 
         {self.player1} -> Ganhou {self.player1.win} rodadas.
-        Encerrou com {self.player1.mao.tamanho()} cartas na mão.
+        Encerrou com {self.player1.totalCartas()} cartas na mão.
 
         ****************************************
 
         {self.player2} -> Ganhou {self.player2.win} rodadas.
-        Encerrou com {self.player2.mao.tamanho()} cartas na mão.
+        Encerrou com {self.player2.totalCartas()} cartas na mão.
 
         #########################################
         """)
@@ -94,6 +111,8 @@ class Game:
         self.player2.name = name2
         self.divideBaralho()
         while True:
+            print(f'\n\nRodada {self.__round+1}\n\n')
+            self.round()
             if (self.__round % Game.INTERVALO) == 0:
                 if input('\nDeseja [E]ncerrar o jogo agora ou [C]ontinuar até algum jogador não ter mais cartas?').upper() == 'E':
                     print("""
@@ -105,12 +124,11 @@ class Game:
                     if input("Deseja [R]einiciar ou [E]ncerrar o jogo?").upper() == 'R':
                         self.restart()
                     break                
-            print(f'\n\nRodada {self.__round}\n\n')
-            self.round()
             input('Continuar...')
 
     def restart(self):
         self.player1 = Player()
         self.player2 = Player()
         self.baralho = Baralho()
+        self.__round = 0 #tinha faltado fazer isso
         self.start()

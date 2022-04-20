@@ -8,7 +8,7 @@ class Player:
         self.__name = ''
         self.__id = Player.ID
         self.__win = 0
-        self.mao = Pilha()
+        self.__mao = Pilha()
         
     #get name
     @property
@@ -34,7 +34,18 @@ class Player:
     @win.setter
     def win(self, value):
         self.__win = value
-    
 
+    def empilhaCarta(self, carta):
+        self.__mao.empilha(carta)
+
+    def desempilhaCarta(self):
+        return self.__mao.desempilha()
+
+    def totalCartas(self) -> int:
+        return self.__mao.tamanho()
+    
+    def recebeCartaFundo(self, carta):
+        self.__mao.insereFundo(carta)
+    
     def __str__(self):
-        return f'Jogador {self.id}: {self.name}'
+        return f'Jogador {self.id} [{self.name}]'
